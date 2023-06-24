@@ -36,8 +36,6 @@ Within the Lab color space, each pixel is still represented by three numbers. Ho
 
 ![lab image](./files/lab.jpg)
 
-In the papers I studied and the colorization codes I explored on GitHub, the prevalent practice is to utilize the Lab color space instead of RGB when training models. There are several reasons behind this choice, and I'll provide you with an intuitive understanding of why this decision is made.
-
 To train a colorization model, we typically provide it with a grayscale image and expect it to generate a colorful output. When using the Lab color space, we can feed the L channel (representing the grayscale image) to the model and task it with predicting the remaining two channels (*a and *b). After obtaining these predictions, we concatenate all three channels to reconstruct the final colorful image.
 
 However, if we were to use RGB directly, we would first need to convert the image to grayscale, feed the grayscale image to the model, and hope that the model accurately predicts all three color channels. This proves to be a more challenging and unstable task due to the significantly larger number of possible combinations when predicting three numbers compared to just two numbers.
