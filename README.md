@@ -523,9 +523,9 @@ This baseline model has some basic understanding of some most common objects in 
 
 Inspired by an idea in Super Resolution literature, We decided to pretrain the generator separately in a supervised and deterministic manner to avoid the problem of "the blind leading the blind" in the GAN game where neither generator nor discriminator knows anything about the task at the beginning of training. 
 
-Pretraining in two stages: 
-1- The backbone of the generator (the down sampling path) is a pretrained model for classification (on ImageNet) 
-2- The whole generator will be pretrained on the task of colorization with L1 loss.
+Pretraining in two stages: <br />
+1- The backbone of the generator (the down sampling path) is a pretrained model for classification (on ImageNet) <br />
+2- The whole generator will be pretrained on the task of colorization with L1 loss.<br />
 
 Pretrained ResNet18 as the backbone of my U-Net and to accomplish the second stage of pretraining, we are going to train the U-Net on our training set with only L1 Loss. Then we will move to the combined adversarial and L1 loss, as we did in the previous section.
 
