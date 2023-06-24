@@ -64,8 +64,6 @@ If we use L1 loss alone, the model still learns to colorize the images but it wi
 
 where _**λ**_ is a coefficient to balance the contribution of the two losses to the final loss (of course the discriminator loss does not involve the L1 loss).
 
-Okay. I think it's enough for theory! Let's get our hands dirty with the code! In the following section, I first introduce the code to implement the paper and in the section after that, I will introduce a better strategy to get really amazing results in one or two hours of training and without needing huge amount of data!
-
 ## 1 - Implementing the paper - Our Baseline
 
 ### 1.1- Loading Image Paths
