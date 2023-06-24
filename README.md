@@ -44,29 +44,15 @@ To train a colorization model, we typically provide it with a grayscale image an
 
 However, if we were to use RGB directly, we would first need to convert the image to grayscale, feed the grayscale image to the model, and hope that the model accurately predicts all three color channels. This proves to be a more challenging and unstable task due to the significantly larger number of possible combinations when predicting three numbers compared to just two numbers.
 
-Let's assume we have 256 choices for each number (in an 8-bit unsigned integer image, this corresponds to the actual number of choices). Predicting three numbers for each pixel involves selecting from 256³ combinations, resulting in over 16 million possible choices. On the other hand, when predicting two numbers, we have approximately 65,000 choices (note that these numbers are not chosen randomly like in a classification task; they are provided here to offer an intuitive comparison).
-
-Hence, employing the Lab color space simplifies the colorization task by reducing the number of predictions from three to two, leading to more stable and feasible training.
-
-## How to solve the problem
-
-During the last few years, many different solutions have been proposed to colorize images by using deep learning. [_**Colorful Image Colorization**_](https://arxiv.org/abs/1603.08511) paper approached the problem as a classification task and they also considered the uncertainty of this problem (e.x. a car in the image can take on many different and valid colors and we cannot be sure about any color for it); however, another paper approached the problem as a regression task (with some more tweaks!). There are pros and cons to each approach but in this article, we are going to use a different strategy.
-
-### The strategy we are going to use
-
-[_**Image-to-Image Translation with Conditional Adversarial Networks**_](https://arxiv.org/abs/1611.07004) paper, which you may know by the name pix2pix, proposed a general solution to many image-to-image tasks in deep learning which one of those was colorization. In this approach two losses are used: L1 loss, which makes it a regression task, and an adversarial (GAN) loss, which helps to solve the problem in an unsupervised manner (by assigning the outputs a number indicating how "real" they look!).
-
-In this tutorial, I will first implement what the authors did in the paper and then I will introduce a whole new generator model and some tweaks in the strategy of training which significantly helps reduce the size of needed dataset while getting amazing results. So stay tuned :)
+We are going to build a GAN (a conditional GAN to be specific) and use an extra loss function, L1 loss. Let's start with the GAN.
 
 ### A deeper dive into GAN world
 
-As mentioned earlier, we are going to build a GAN (a conditional GAN to be specific) and use an extra loss function, L1 loss. Let's start with the GAN.
+In a Generative Adversarial Network (GAN), there are two main components: the generator and the discriminator. These models work together to solve a problem. In our specific setup, the generator model takes a grayscale image (a single-channel image) as input and generates a two-channel image, with one channel for *a and another for *b. On the other hand, the discriminator model takes these two generated channels, concatenates them with the input grayscale image, and determines whether the resulting three-channel image is real or fake. It is important to note that the discriminator also needs exposure to real images (three-channel images in the Lab color space) that are not produced by the generator, and it should learn to recognize them as real.
 
-As you might know, in a GAN we have a generator and a discriminator model which learn to solve a problem together. In our setting, the generator model takes a grayscale image (1-channel image) and produces a 2-channel image, a channel for \*a and another for \*b. The discriminator, takes these two produced channels and concatenates them with the input grayscale image and decides whether this new 3-channel image is fake or real. Of course the discriminator also needs to see some real images (3-channel images again in Lab color space) that are not produced by the generator and should learn that they are real. 
+Now, let's discuss the "condition" we mentioned earlier. The grayscale image that both the generator and discriminator observe serves as the condition provided to both models in our GAN. We expect that both models take this condition into consideration during their respective tasks.
 
-So what about the "condition" we mentioned? Well, that grayscale image which both the generator and discriminator see is the condition that we provide to both models in our GAN and expect that the they take this condition into consideration.
-
-Let's take a look at the math. Consider _**x**_ as the grayscale image, _**z**_ as the input noise for the generator, and _**y**_ as the 2-channel output we want from the generator (it can also represent the 2 color channels of a real image). Also, _**G**_ is the generator model and _**D**_ is the discriminator. Then the loss for our conditional GAN will be:
+To delve into the mathematical aspect, let's denote the grayscale image as x, the input noise for the generator as z, and the desired two-channel output as y (which can also represent the two color channels of a real image). Furthermore, G represents the generator model, and D represents the discriminator. Consequently, the loss function for our conditional GAN can be expressed as follows:
 
 ![GAN Loss](./files/GAN_loss.jpg)
 
