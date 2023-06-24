@@ -412,9 +412,6 @@ class MainModel(nn.Module):
 
 ### 1.xx Utility functions
 
-These functions were nor included in the explanations of the TDS article. These are just some utility functions to log the losses of our network and also visualize the results during training. So here you can check them out:
-
-
 ```python
 class AverageMeter:
     def __init__(self):
