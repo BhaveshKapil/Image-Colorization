@@ -1,16 +1,7 @@
 # Image Colorization with U-Net and GAN Tutorial
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/moein-shariatnia/Deep-Learning/blob/main/Image%20Colorization%20Tutorial/Image%20Colorization%20with%20U-Net%20and%20GAN%20Tutorial.ipynb)
+**I have successfully completed my project in the second semester of my MTech program, with guidance from my advisor. Throughout its development, I extensively utilized numerous resources, including research papers, to enhance my understanding of various concepts in deep learning.  This project has greatly contributed to my understanding of various concepts in deep learning, significantly aiding in my learning process. To quickly review the project, you can directly refer to the "Project_Report.pdf" file, which contains all the mentioned results. Enjoy!!**
 
-**This is an advanced tutorial on _Image Colorization_ using deep learning and [PyTorch](https://pytorch.org/).**
-
-**This is [the related article](https://towardsdatascience.com/colorizing-black-white-images-with-u-net-and-conditional-gan-a-tutorial-81b2df111cd8) on **TowardsDataScince** by myself which you can check out. I've put the explanations here as well but one could prefer to read it from the article.**
-
-I highly recommend that you go through this tutorial in **colab** by simply clicking the **Open in Colab** badge below. You can train the models from scratch or downlaod the pretrained weights and use it to colorize your black & white images. All the tutorial explanations are included there as well.
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/moein-shariatnia/Deep-Learning/blob/main/Image%20Colorization%20Tutorial/Image%20Colorization%20with%20U-Net%20and%20GAN%20Tutorial.ipynb)
-
-**Please :star: star :star: this repo if you liked the tutorial :)**
 
 ## Final model's output 
 
@@ -27,7 +18,11 @@ Left: Input black & white images from test set | Right: the colorized outputs by
 
 ---
 
-One of the most exciting applications of deep learning is colorizing black and white images.  This task needed a lot of human input and hardcoding several years ago but now the whole process can be done end-to-end with the power of AI and deep learning. You might think that you need huge amount of data or long training times to train your model from scratch for this task but in the last few weeks I worked on this and tried many different model architectures, loss functions, training strategies, etc. and finally developed an efficient strategy to train such a model, using the latest advances in deep learning, on a rather small dataset and with really short training times. In this article, I'm going to explain what I did to make this happen, including the code!, and the strategies that helped and also those that were not useful. Before that, I will explain the colorization problem and a give you a short review of what has been done in recent years. I'll assume you have basic knowledge about deep learning, GANs, and PyTorch library for the rest of the article. Let's begin!
+Colorizing black and white images has emerged as an exhilarating application of deep learning. In the past, this task required extensive human involvement and laborious manual coding. However, thanks to the power of AI and deep learning, the entire process can now be seamlessly accomplished end-to-end. While one might assume that training a model from scratch for this task necessitates vast amounts of data and lengthy training times, my recent work in the past few weeks disproves this belief.
+
+During this period, I experimented with various model architectures, loss functions, training strategies, and more to find an optimal approach. Leveraging the latest advancements in deep learning, I successfully developed an efficient strategy to train a model for colorization. Surprisingly, this was achieved using a relatively small dataset and significantly reduced training times. In this article, I will provide a detailed account of the steps I took, including the accompanying code. Additionally, I will discuss the strategies that proved effective as well as those that did not yield the desired results.
+
+Before delving into the technical aspects, I will provide an overview of the colorization problem and offer a brief summary of the advancements made in recent years. It is assumed that readers possess a basic understanding of deep learning, GANs, and the PyTorch library. Without further ado, let us embark on this exciting journey.
 
 ## Introduction to colorization problem
 
@@ -35,15 +30,23 @@ Here I'm going to give you some basic knowledge that you may need to understand 
 
 ### RGB vs L\*a\*b
 
-As you might know, when we load an image, we get a rank-3 (height, width, color) array with the last axis containing the color data for our image. These data represent color in RGB color space and there are 3 numbers for each pixel indicating how much Red, Green, and Blue the pixel is. In the following image you can see that in the left part of the "main image" (the leftmost image) we have blue color so in the blue channel of the image, that part has higher values and has turned dark.
+As you may be aware, when an image is loaded, it is represented as a rank-3 array (height, width, color), where the last axis corresponds to the color data of the image. These data typically represent color in the RGB color space, with each pixel having three numbers indicating the amount of Red, Green, and Blue present. In the provided image, you can observe that the left portion of the "main image" (the leftmost image) appears blue. Consequently, in the blue channel of the image, this specific area exhibits higher values, resulting in a darker shade.
 
 ![rgb image](./files/rgb.jpg)
 
-In L\*a\*b color space, we have again three numbers for each pixel but these numbers have different meanings. The first number (channel), L, encodes the Lightness of each pixel and when we visualize this channel (the second image in the row below) it appears as a black and white image. The \*a and \*b channels encode how much green-red and yellow-blue each pixel is, respectively. In the following image you can see each channel of L\*a\*b color space separately.
+Within the Lab color space, each pixel is still represented by three numbers. However, the interpretation of these numbers differs. The first channel, L, encodes the Lightness of each pixel. When visualized independently (as depicted in the second image in the row below), this channel appears as a black and white image. On the other hand, the a and b channels encode the levels of green-red and yellow-blue, respectively, for each pixel. The following image demonstrates the individual channels of the Lab color space.
 
 ![lab image](./files/lab.jpg)
 
-In all papers I studied and all codes I checked out on colorization on GitHub, people use L\*a\*b color space instead of RGB to train the models. There are a couple of reasons for this choice but I'll give you an intuition of why we make this choice. To train a model for colorization, we should give it a grayscale image and hope that it will make it colorful. When using L\*a\*b, we can give the L channel to the model (which is the grayscale image) and want it to predict the other two channels (\*a, \*b) and after its prediction, we concatenate all the channels and we get our colorful image. But if you use RGB, you have to first convert your image to grayscale, feed the grayscale image to the model and hope it will predict 3 numbers for you which is a way more difficult and unstable task due to the many more possible combinations of 3 numbers compared to two numbers. If we assume we have 256 choices (in a 8-bit unsigned integer image this is the real number of choices) for each number, predicting the three numbers for each of the pixels is choosing between 256³ combinations which is more than 16 million choices, but when predicting two numbers we have about 65000 choices (actually, we are not going to wildly choose these numbers like a classification task and I just wrote these numbers to give you an intuition).
+In the papers I studied and the colorization codes I explored on GitHub, the prevalent practice is to utilize the Lab color space instead of RGB when training models. There are several reasons behind this choice, and I'll provide you with an intuitive understanding of why this decision is made.
+
+To train a colorization model, we typically provide it with a grayscale image and expect it to generate a colorful output. When using the Lab color space, we can feed the L channel (representing the grayscale image) to the model and task it with predicting the remaining two channels (*a and *b). After obtaining these predictions, we concatenate all three channels to reconstruct the final colorful image.
+
+However, if we were to use RGB directly, we would first need to convert the image to grayscale, feed the grayscale image to the model, and hope that the model accurately predicts all three color channels. This proves to be a more challenging and unstable task due to the significantly larger number of possible combinations when predicting three numbers compared to just two numbers.
+
+Let's assume we have 256 choices for each number (in an 8-bit unsigned integer image, this corresponds to the actual number of choices). Predicting three numbers for each pixel involves selecting from 256³ combinations, resulting in over 16 million possible choices. On the other hand, when predicting two numbers, we have approximately 65,000 choices (note that these numbers are not chosen randomly like in a classification task; they are provided here to offer an intuitive comparison).
+
+Hence, employing the Lab color space simplifies the colorization task by reducing the number of predictions from three to two, leading to more stable and feasible training.
 
 ## How to solve the problem
 
