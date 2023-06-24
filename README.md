@@ -509,9 +509,6 @@ def log_results(loss_meter_dict):
 
 ### 1.7- Training function
 
-I hope this code is self-explanatory. Every epoch takes about 4 minutes on not a powerful GPU as Nvidia P5000. So if you are using 1080Ti or higher, it will be much faster.
-
-
 ```python
 def train_model(model, train_dl, epochs, display_every=200):
     data = next(iter(val_dl)) # getting a batch for visualizing the model output after fixed intrvals
@@ -533,30 +530,25 @@ model = MainModel()
 train_model(model, train_dl, 100)
 ```
 
-Every epoch takes about 3 to 4 minutes on Colab. After about 20 epochs you should see some reasonable results.
-
 Okay. I let the model train for some longer (about 100 epochs). Here are the results of our baseline model:
 
 ![baseline](./files/baseline.png)
 
 As you can see, although this baseline model has some basic understanding of some most common objects in images like sky, trees, … its output is far from something appealing and it cannot decide on the color of rare objects. It also displays some color spillovers and circle-shaped mass of color (center of first image of second row) which is not good at all. So, it seems like that with this small dataset we cannot get good results with this strategy. **Therefore, we change our strategy!**
 
-## 2- A new strategy - the final model
+## 2- The Final Model
 
-Here is the focus of this article and where I'm going to explain what I did to overcome the last mentioned problem. Inspired by an idea in Super Resolution literature, I decided to pretrain the generator separately in a supervised and deterministic manner to avoid the problem of "the blind leading the blind" in the GAN game where neither generator nor discriminator knows anything about the task at the beginning of training. 
+Inspired by an idea in Super Resolution literature, We decided to pretrain the generator separately in a supervised and deterministic manner to avoid the problem of "the blind leading the blind" in the GAN game where neither generator nor discriminator knows anything about the task at the beginning of training. 
 
-Actually I use pretraining in two stages: 1- The backbone of the generator (the down sampling path) is a pretrained model for classification (on ImageNet) 2- The whole generator will be pretrained on the task of colorization with L1 loss.
+Pretraining in two stages: 
+1- The backbone of the generator (the down sampling path) is a pretrained model for classification (on ImageNet) 
+2- The whole generator will be pretrained on the task of colorization with L1 loss.
 
-In fact, I'm going to use a pretrained ResNet18 as the backbone of my U-Net and to accomplish the second stage of pretraining, we are going to train the U-Net on our training set with only L1 Loss. Then we will move to the combined adversarial and L1 loss, as we did in the previous section.
+Pretrained ResNet18 as the backbone of my U-Net and to accomplish the second stage of pretraining, we are going to train the U-Net on our training set with only L1 Loss. Then we will move to the combined adversarial and L1 loss, as we did in the previous section.
 
 ### 2.1- Using a new generator
 
-Building a U-Net with a ResNet backbone is not something trivial so I'll use fastai library's Dynamic U-Net module to easily build one. You can simply install fastai with pip or conda. Here's the link to the [documentation](https://docs.fast.ai/).
-
----
-#### Update Jan 8th, 2022: <br> 
-You need to install fastai version 2.4 for the following lines code to run w/o errors.
-<br><br><br>
+Building a U-Net with a ResNet backbone is not something trivial so We use fastai library's Dynamic U-Net module to easily build one. BY simply install fastai with pip or conda. Here's the link to the [documentation](https://docs.fast.ai/).
 
 ```python
 # pip install fastai==2.4
@@ -573,8 +565,6 @@ def build_res_unet(n_input=1, n_output=2, size=256):
     net_G = DynamicUnet(body, n_output, (size, size)).to(device)
     return net_G
 ```
-
-That's it! With just these few lines of code you can build such a complex model easily. create_body function loads the pretrained weights of the ResNet18 architecture and cuts the model to remove the last two layers (GlobalAveragePooling and a Linear layer for the ImageNet classification task). Then, DynamicUnet uses this backbone to build a U-Net with the needed output channels (2 in our case) and with an input size of 256.
 
 ### 2.2 Pretraining the generator for colorization task
 
