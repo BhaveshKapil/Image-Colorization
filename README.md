@@ -24,8 +24,6 @@ During this period, I experimented with various model architectures, loss functi
 
 ## Introduction to colorization problem
 
-Here I'm going to give you some basic knowledge that you may need to understand what the models do in the following codes.
-
 ### RGB vs L\*a\*b
 
 As you may be aware, when an image is loaded, it is represented as a rank-3 array (height, width, color), where the last axis corresponds to the color data of the image. These data typically represent color in the RGB color space, with each pixel having three numbers indicating the amount of Red, Green, and Blue present. In the provided image, you can observe that the left portion of the "main image" (the leftmost image) appears blue. Consequently, in the blue channel of the image, this specific area exhibits higher values, resulting in a darker shade.
