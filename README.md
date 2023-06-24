@@ -68,8 +68,7 @@ where _**λ**_ is a coefficient to balance the contribution of the two losses to
 
 ### 1.1- Loading Image Paths
 
-The paper uses the whole ImageNet dataset (with 1.3 million images!) but here I'm using only 8,000 images from COCO dataset for training which I had available on my device. So our training set size is 0.6% of what was used in the paper!
-You can use almost any dataset for this task as far as it contains many different scenes and locations which you hope it will learn to colorize. You can use ImageNet for example but you will only need 8000 of its images for this project.
+We are using only 8,000 images from COCO dataset for training . 
 
 
 ```python
