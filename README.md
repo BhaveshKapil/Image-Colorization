@@ -1,16 +1,7 @@
 # Image Colorization with U-Net and GAN Tutorial
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/moein-shariatnia/Deep-Learning/blob/main/Image%20Colorization%20Tutorial/Image%20Colorization%20with%20U-Net%20and%20GAN%20Tutorial.ipynb)
+**I have successfully completed my project in the second semester of my MTech program, with guidance from my advisor. Throughout its development, I extensively utilized numerous resources, including research papers, to enhance my understanding of various concepts in deep learning.  This project has greatly contributed to my understanding of various concepts in deep learning, significantly aiding in my learning process. To quickly review the project, you can directly refer to the "Project_Report.pdf" file, which contains all the mentioned results. Enjoy!!**
 
-**This is an advanced tutorial on _Image Colorization_ using deep learning and [PyTorch](https://pytorch.org/).**
-
-**This is [the related article](https://towardsdatascience.com/colorizing-black-white-images-with-u-net-and-conditional-gan-a-tutorial-81b2df111cd8) on **TowardsDataScince** by myself which you can check out. I've put the explanations here as well but one could prefer to read it from the article.**
-
-I highly recommend that you go through this tutorial in **colab** by simply clicking the **Open in Colab** badge below. You can train the models from scratch or downlaod the pretrained weights and use it to colorize your black & white images. All the tutorial explanations are included there as well.
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/moein-shariatnia/Deep-Learning/blob/main/Image%20Colorization%20Tutorial/Image%20Colorization%20with%20U-Net%20and%20GAN%20Tutorial.ipynb)
-
-**Please :star: star :star: this repo if you liked the tutorial :)**
 
 ## Final model's output 
 
@@ -27,43 +18,35 @@ Left: Input black & white images from test set | Right: the colorized outputs by
 
 ---
 
-One of the most exciting applications of deep learning is colorizing black and white images.  This task needed a lot of human input and hardcoding several years ago but now the whole process can be done end-to-end with the power of AI and deep learning. You might think that you need huge amount of data or long training times to train your model from scratch for this task but in the last few weeks I worked on this and tried many different model architectures, loss functions, training strategies, etc. and finally developed an efficient strategy to train such a model, using the latest advances in deep learning, on a rather small dataset and with really short training times. In this article, I'm going to explain what I did to make this happen, including the code!, and the strategies that helped and also those that were not useful. Before that, I will explain the colorization problem and a give you a short review of what has been done in recent years. I'll assume you have basic knowledge about deep learning, GANs, and PyTorch library for the rest of the article. Let's begin!
+Colorizing black and white images has emerged as an exhilarating application of deep learning. In the past, this task required extensive human involvement and laborious manual coding. However, thanks to the power of AI and deep learning, the entire process can now be seamlessly accomplished end-to-end. While one might assume that training a model from scratch for this task necessitates vast amounts of data and lengthy training times, my recent work in the past few weeks disproves this belief.
+
+During this period, I experimented with various model architectures, loss functions, training strategies, and more to find an optimal approach. Leveraging the latest advancements in deep learning, I successfully developed an efficient strategy to train a model for colorization. Surprisingly, this was achieved using a relatively small dataset and significantly reduced training times. 
 
 ## Introduction to colorization problem
 
-Here I'm going to give you some basic knowledge that you may need to understand what the models do in the following codes.
-
 ### RGB vs L\*a\*b
 
-As you might know, when we load an image, we get a rank-3 (height, width, color) array with the last axis containing the color data for our image. These data represent color in RGB color space and there are 3 numbers for each pixel indicating how much Red, Green, and Blue the pixel is. In the following image you can see that in the left part of the "main image" (the leftmost image) we have blue color so in the blue channel of the image, that part has higher values and has turned dark.
+As you may be aware, when an image is loaded, it is represented as a rank-3 array (height, width, color), where the last axis corresponds to the color data of the image. These data typically represent color in the RGB color space, with each pixel having three numbers indicating the amount of Red, Green, and Blue present. In the provided image, you can observe that the left portion of the "main image" (the leftmost image) appears blue. Consequently, in the blue channel of the image, this specific area exhibits higher values, resulting in a darker shade.
 
 ![rgb image](./files/rgb.jpg)
 
-In L\*a\*b color space, we have again three numbers for each pixel but these numbers have different meanings. The first number (channel), L, encodes the Lightness of each pixel and when we visualize this channel (the second image in the row below) it appears as a black and white image. The \*a and \*b channels encode how much green-red and yellow-blue each pixel is, respectively. In the following image you can see each channel of L\*a\*b color space separately.
+Within the Lab color space, each pixel is still represented by three numbers. However, the interpretation of these numbers differs. The first channel, L, encodes the Lightness of each pixel. When visualized independently (as depicted in the second image in the row below), this channel appears as a black and white image. On the other hand, the a and b channels encode the levels of green-red and yellow-blue, respectively, for each pixel. The following image demonstrates the individual channels of the Lab color space.
 
 ![lab image](./files/lab.jpg)
 
-In all papers I studied and all codes I checked out on colorization on GitHub, people use L\*a\*b color space instead of RGB to train the models. There are a couple of reasons for this choice but I'll give you an intuition of why we make this choice. To train a model for colorization, we should give it a grayscale image and hope that it will make it colorful. When using L\*a\*b, we can give the L channel to the model (which is the grayscale image) and want it to predict the other two channels (\*a, \*b) and after its prediction, we concatenate all the channels and we get our colorful image. But if you use RGB, you have to first convert your image to grayscale, feed the grayscale image to the model and hope it will predict 3 numbers for you which is a way more difficult and unstable task due to the many more possible combinations of 3 numbers compared to two numbers. If we assume we have 256 choices (in a 8-bit unsigned integer image this is the real number of choices) for each number, predicting the three numbers for each of the pixels is choosing between 256³ combinations which is more than 16 million choices, but when predicting two numbers we have about 65000 choices (actually, we are not going to wildly choose these numbers like a classification task and I just wrote these numbers to give you an intuition).
+To train a colorization model, we typically provide it with a grayscale image and expect it to generate a colorful output. When using the Lab color space, we can feed the L channel (representing the grayscale image) to the model and task it with predicting the remaining two channels (*a and *b). After obtaining these predictions, we concatenate all three channels to reconstruct the final colorful image.
 
-## How to solve the problem
+However, if we were to use RGB directly, we would first need to convert the image to grayscale, feed the grayscale image to the model, and hope that the model accurately predicts all three color channels. This proves to be a more challenging and unstable task due to the significantly larger number of possible combinations when predicting three numbers compared to just two numbers.
 
-During the last few years, many different solutions have been proposed to colorize images by using deep learning. [_**Colorful Image Colorization**_](https://arxiv.org/abs/1603.08511) paper approached the problem as a classification task and they also considered the uncertainty of this problem (e.x. a car in the image can take on many different and valid colors and we cannot be sure about any color for it); however, another paper approached the problem as a regression task (with some more tweaks!). There are pros and cons to each approach but in this article, we are going to use a different strategy.
-
-### The strategy we are going to use
-
-[_**Image-to-Image Translation with Conditional Adversarial Networks**_](https://arxiv.org/abs/1611.07004) paper, which you may know by the name pix2pix, proposed a general solution to many image-to-image tasks in deep learning which one of those was colorization. In this approach two losses are used: L1 loss, which makes it a regression task, and an adversarial (GAN) loss, which helps to solve the problem in an unsupervised manner (by assigning the outputs a number indicating how "real" they look!).
-
-In this tutorial, I will first implement what the authors did in the paper and then I will introduce a whole new generator model and some tweaks in the strategy of training which significantly helps reduce the size of needed dataset while getting amazing results. So stay tuned :)
+We are going to build a GAN (a conditional GAN to be specific) and use an extra loss function, L1 loss. Let's start with the GAN.
 
 ### A deeper dive into GAN world
 
-As mentioned earlier, we are going to build a GAN (a conditional GAN to be specific) and use an extra loss function, L1 loss. Let's start with the GAN.
+In a Generative Adversarial Network (GAN), there are two main components: the generator and the discriminator. These models work together to solve a problem. In our specific setup, the generator model takes a grayscale image (a single-channel image) as input and generates a two-channel image, with one channel for *a and another for *b. On the other hand, the discriminator model takes these two generated channels, concatenates them with the input grayscale image, and determines whether the resulting three-channel image is real or fake. It is important to note that the discriminator also needs exposure to real images (three-channel images in the Lab color space) that are not produced by the generator, and it should learn to recognize them as real.
 
-As you might know, in a GAN we have a generator and a discriminator model which learn to solve a problem together. In our setting, the generator model takes a grayscale image (1-channel image) and produces a 2-channel image, a channel for \*a and another for \*b. The discriminator, takes these two produced channels and concatenates them with the input grayscale image and decides whether this new 3-channel image is fake or real. Of course the discriminator also needs to see some real images (3-channel images again in Lab color space) that are not produced by the generator and should learn that they are real. 
+Now, let's discuss the "condition" we mentioned earlier. The grayscale image that both the generator and discriminator observe serves as the condition provided to both models in our GAN. We expect that both models take this condition into consideration during their respective tasks.
 
-So what about the "condition" we mentioned? Well, that grayscale image which both the generator and discriminator see is the condition that we provide to both models in our GAN and expect that the they take this condition into consideration.
-
-Let's take a look at the math. Consider _**x**_ as the grayscale image, _**z**_ as the input noise for the generator, and _**y**_ as the 2-channel output we want from the generator (it can also represent the 2 color channels of a real image). Also, _**G**_ is the generator model and _**D**_ is the discriminator. Then the loss for our conditional GAN will be:
+To delve into the mathematical aspect, let's denote the grayscale image as x, the input noise for the generator as z, and the desired two-channel output as y (which can also represent the two color channels of a real image). Furthermore, G represents the generator model, and D represents the discriminator. Consequently, the loss function for our conditional GAN can be expressed as follows:
 
 ![GAN Loss](./files/GAN_loss.jpg)
 
@@ -81,14 +64,11 @@ If we use L1 loss alone, the model still learns to colorize the images but it wi
 
 where _**λ**_ is a coefficient to balance the contribution of the two losses to the final loss (of course the discriminator loss does not involve the L1 loss).
 
-Okay. I think it's enough for theory! Let's get our hands dirty with the code! In the following section, I first introduce the code to implement the paper and in the section after that, I will introduce a better strategy to get really amazing results in one or two hours of training and without needing huge amount of data!
-
 ## 1 - Implementing the paper - Our Baseline
 
 ### 1.1- Loading Image Paths
 
-The paper uses the whole ImageNet dataset (with 1.3 million images!) but here I'm using only 8,000 images from COCO dataset for training which I had available on my device. So our training set size is 0.6% of what was used in the paper!
-You can use almost any dataset for this task as far as it contains many different scenes and locations which you hope it will learn to colorize. You can use ImageNet for example but you will only need 8000 of its images for this project.
+We are using only 8,000 images from COCO dataset for training . 
 
 
 ```python
@@ -133,9 +113,6 @@ for ax, img_path in zip(axes.flatten(), train_paths):
 ```
 
 ### 1.2- Making Datasets and DataLoaders
-
-I hope the code is self-explanatory. I'm resizing the images and flipping horizontally (flipping only if it is training set) and then I read an RGB image, convert it to Lab color space and separate the first (grayscale) channel and the color channels as my inputs and targets for the models  respectively. Then I'm making the data loaders.
-
 
 ```python
 SIZE = 256
@@ -185,14 +162,13 @@ print(Ls.shape, abs_.shape)
 print(len(train_dl), len(val_dl))
 ```
 
-### 1.3- Generator proposed by the paper
+### 1.3- Generator
 
-This one is a little complicated and needs explanation. This code implements a U-Net to be used as the generator of our GAN. The details of the code are out of the scope of this article but the important thing to understand is that it makes the U-Net from the middle part of it (down in the U shape) and adds down-sampling and up-sampling modules to the left and right of that middle module (respectively) at every iteration until it reaches the input module and output module. Look at the following image that I made from one of the images in the article to give you a better sense of what is happening in the code:
+This code implements a U-Net to be used as the generator of our GAN. The important thing to understand is that it makes the U-Net from the middle part of it (down in the U shape) and adds down-sampling and up-sampling modules to the left and right of that middle module (respectively) at every iteration until it reaches the input module and output module. Look at the following image that made from one of the images in the article to give you a better sense of what is happening in the code:
 
 ![unet](./files/unet.png)
 
-The blue rectangles show the order in which the related modules are built with the code. The U-Net we will build has more layers than what is depicted in this image but it suffices to give you the idea. Also notice in the code that we are going 8 layers down, so if we start with a 256 by 256 image, in the middle of the U-Net we will get a 1 by 1 (256 / 2⁸) image and then it gets up-sampled to produce a  256 by 256 image (with two channels). This code snippet is really exciting and I highly recommend to play with it to fully grasp what every line of it is doing.
-
+The blue rectangles show the order in which the related modules are built with the code. The U-Net we will build has more layers than what is depicted in this image but it suffices to give you the idea. Also notice in the code that we are going 8 layers down, so if we start with a 256 by 256 image, in the middle of the U-Net we will get a 1 by 1 (256 / 2⁸) image and then it gets up-sampled to produce a  256 by 256 image (with two channels). 
 
 ```python
 class UnetBlock(nn.Module):
@@ -295,7 +271,9 @@ out = discriminator(dummy_input)
 out.shape
 ```
 
-We are using a "Patch" Discriminator here. Okay, what is it?! In a vanilla discriminator, the model outputs one number (a scaler) which represents how much the model thinks the input (which is the whole image) is real (or fake). In a patch discriminator, the model outputs one number for every patch of say 70 by 70 pixels of the input image and for each of them decides whether it is fake or not separately. Using such a model for the task of colorization seems reasonable to me because the local changes that the model needs to make are really important and maybe deciding on the whole image as in vanilla discriminator cannot take care of the subtleties of this task. Here, the model's output shape is 30 by 30 but it does not mean that our patches are 30 by 30. The actual patch size is obtained when you compute the receptive field of each of these 900 (30 multiplied by 30) output numbers which in our case will be 70 by 70.
+We are using a "Patch" Discriminator here. In a vanilla discriminator, the model outputs one number (a scaler) which represents how much the model thinks the input (which is the whole image) is real (or fake). 
+
+In a patch discriminator, the model outputs one number for every patch of say 70 by 70 pixels of the input image and for each of them decides whether it is fake or not separately. Using such a model for the task of colorization seems reasonable to me because the local changes that the model needs to make are really important and maybe deciding on the whole image as in vanilla discriminator cannot take care of the subtleties of this task. Here, the model's output shape is 30 by 30 but it does not mean that our patches are 30 by 30. The actual patch size is obtained when you compute the receptive field of each of these 900 (30 multiplied by 30) output numbers which in our case will be 70 by 70.
 
 ### 1.5- GAN Loss
 
@@ -328,7 +306,7 @@ class GANLoss(nn.Module):
 
 ### 1.x Model Initialization
 
-In the TowardsDataScince article, I didn't explain this function. Here is our logic to initialize our models. We are going to initialize the weights of our model with a mean of 0.0 and standard deviation of 0.02 which are the proposed hyperparameters in the article:
+We are going to initialize the weights of our model with a mean of 0.0 and standard deviation of 0.02 which are the proposed hyperparameters in the project:
 
 
 ```python
@@ -364,11 +342,8 @@ def init_model(model, device):
 
 This class brings together all the previous parts and implements a few methods to take care of training our complete model. Let's investigate it. 
 
-In the __init__ we define our generator and discriminator using the previous functions and classes we defined and we also initialize them with init_model function which I didn't explain here but you can refer to my GitHub repository to see how it works. Then we define our two loss functions and the optimizers of the generator and discriminator. 
-
-The whole work is being done in optimize method of this class. First and only once per iteration (batch of training set) we call the module's forward method and store the outputs in fake_color variable of the class. 
-
 Then, we first train the discriminator by using backward_D method in which we feed the fake images produced by generator to the discriminator (make sure to detach them from the generator's graph so that they act as a constant to the discriminator, like normal images) and label them as fake. Then we feed a batch of real images from training set to the discriminator and label them as real. We add up the two losses for fake and real and take the average and then call the backward on the final loss. 
+
 Now, we can train the generator. In backward_G method we feed the discriminator the fake image and try to fool it by assigning real labels to them and calculating the adversarial loss. As I mentioned earlier, we use L1 loss as well and compute the distance between the predicted two channels and the target two channels and multiply this loss by a coefficient (which is 100 in our case) to balance the two losses and then add this loss to the adversarial loss. Then we call the backward method of the loss.
 
 
@@ -436,9 +411,6 @@ class MainModel(nn.Module):
 ```
 
 ### 1.xx Utility functions
-
-These functions were nor included in the explanations of the TDS article. These are just some utility functions to log the losses of our network and also visualize the results during training. So here you can check them out:
-
 
 ```python
 class AverageMeter:
@@ -520,9 +492,6 @@ def log_results(loss_meter_dict):
 
 ### 1.7- Training function
 
-I hope this code is self-explanatory. Every epoch takes about 4 minutes on not a powerful GPU as Nvidia P5000. So if you are using 1080Ti or higher, it will be much faster.
-
-
 ```python
 def train_model(model, train_dl, epochs, display_every=200):
     data = next(iter(val_dl)) # getting a batch for visualizing the model output after fixed intrvals
@@ -544,30 +513,25 @@ model = MainModel()
 train_model(model, train_dl, 100)
 ```
 
-Every epoch takes about 3 to 4 minutes on Colab. After about 20 epochs you should see some reasonable results.
-
 Okay. I let the model train for some longer (about 100 epochs). Here are the results of our baseline model:
 
 ![baseline](./files/baseline.png)
 
-As you can see, although this baseline model has some basic understanding of some most common objects in images like sky, trees, … its output is far from something appealing and it cannot decide on the color of rare objects. It also displays some color spillovers and circle-shaped mass of color (center of first image of second row) which is not good at all. So, it seems like that with this small dataset we cannot get good results with this strategy. **Therefore, we change our strategy!**
+This baseline model has some basic understanding of some most common objects in images like sky, trees, … its output is far from something appealing and it cannot decide on the color of rare objects. It also displays some color spillovers and circle-shaped mass of color (center of first image of second row) which is not good at all. So, it seems like that with this small dataset we cannot get good results with this strategy.
 
-## 2- A new strategy - the final model
+## 2- The Final Model
 
-Here is the focus of this article and where I'm going to explain what I did to overcome the last mentioned problem. Inspired by an idea in Super Resolution literature, I decided to pretrain the generator separately in a supervised and deterministic manner to avoid the problem of "the blind leading the blind" in the GAN game where neither generator nor discriminator knows anything about the task at the beginning of training. 
+Inspired by an idea in Super Resolution literature, We decided to pretrain the generator separately in a supervised and deterministic manner to avoid the problem of "the blind leading the blind" in the GAN game where neither generator nor discriminator knows anything about the task at the beginning of training. 
 
-Actually I use pretraining in two stages: 1- The backbone of the generator (the down sampling path) is a pretrained model for classification (on ImageNet) 2- The whole generator will be pretrained on the task of colorization with L1 loss.
+Pretraining in two stages: <br />
+1- The backbone of the generator (the down sampling path) is a pretrained model for classification (on ImageNet) <br />
+2- The whole generator will be pretrained on the task of colorization with L1 loss.<br />
 
-In fact, I'm going to use a pretrained ResNet18 as the backbone of my U-Net and to accomplish the second stage of pretraining, we are going to train the U-Net on our training set with only L1 Loss. Then we will move to the combined adversarial and L1 loss, as we did in the previous section.
+Pretrained ResNet18 as the backbone of my U-Net and to accomplish the second stage of pretraining, we are going to train the U-Net on our training set with only L1 Loss. Then we will move to the combined adversarial and L1 loss, as we did in the previous section.
 
 ### 2.1- Using a new generator
 
-Building a U-Net with a ResNet backbone is not something trivial so I'll use fastai library's Dynamic U-Net module to easily build one. You can simply install fastai with pip or conda. Here's the link to the [documentation](https://docs.fast.ai/).
-
----
-#### Update Jan 8th, 2022: <br> 
-You need to install fastai version 2.4 for the following lines code to run w/o errors.
-<br><br><br>
+Building a U-Net with a ResNet backbone is not something trivial so We use fastai library's Dynamic U-Net module to easily build one. BY simply install fastai with pip or conda. Here's the link to the [documentation](https://docs.fast.ai/).
 
 ```python
 # pip install fastai==2.4
@@ -584,8 +548,6 @@ def build_res_unet(n_input=1, n_output=2, size=256):
     net_G = DynamicUnet(body, n_output, (size, size)).to(device)
     return net_G
 ```
-
-That's it! With just these few lines of code you can build such a complex model easily. create_body function loads the pretrained weights of the ResNet18 architecture and cuts the model to remove the last two layers (GlobalAveragePooling and a Linear layer for the ImageNet classification task). Then, DynamicUnet uses this backbone to build a U-Net with the needed output channels (2 in our case) and with an input size of 256.
 
 ### 2.2 Pretraining the generator for colorization task
 
@@ -626,22 +588,7 @@ model = MainModel(net_G=net_G)
 train_model(model, train_dl, 20)
 ```
 
-Here I'm first loading the saved weights for the generator and then I'm using this model as the generator in our MainModel class  which prevents it from randomly initializing the generator. Then we train the model for 10 to 20 epochs! (compare it to the 100 epochs of the previous section when we didn't use pretraining). Each epoch will take about 3 to 4 minutes on Colab which is really great!
-
-you can refer to the images at the beginning of this tutorial to see the final outputs of this model.
-
-## An accidental finding: You can safely remove Dropout!
-
-Remember that when I was explaining the theory of conditional GAN in the beginning of this article, I said that the source of the noise in the architecture of the generator proposed by authors of the paper was the dropout layers. However, when I investigated the U-Net we built with the help of fastai, I did not find any dropout layers in there! Actually I first trained the final model and got the results and then I investigated the generator and found this out. 
-
-So, was the adversarial training useless? If there is no noise, how possibly the generator can have a creative effect on the output? Is it possible that the input grayscale image to the generator plays the role of noise as well? These were my exact questions at the time. 
-
-Therefor, I decided to email Dr. Phillip Isola, the first author of the same paper we implemented here, and he kindly answered these questions. According to what he said,  this conditional GAN can still work without dropout but the outputs will be more deterministic because of the lack of that noise; however, there is still enough information in that input grayscale image which enables the generator to produce compelling outputs.
-Actually, I saw this in practice that the adversarial training was helpful indeed. In the next and last section, I'm going to compare the results of the pretrained U-Net with no adversarial training against the final outputs we got with adversarial training.
-
-## Comparing the results of the pretrained U-Net with and without adversarial training
-
-One of the cool thing I found in my experiments was that the U-Net we built with the ResNet18 backbone is already awesome in colorizing images after pretraining with L1 Loss only (a step before the final adversarial training). But, the model is still conservative and encourages using gray-ish colors when it is not sure about what the object is or what color it should be. However, it performs really awesome for common scenes in the images like sky, tree, grass, etc. 
+## Comparing the results of the pretrained U-Net with and without adversarial training 
 
 Here I show you the outputs of the U-Net without adversarial training and U-Net with adversarial training to better depict the significant difference that the adversarial training is making in our case:
 
@@ -657,10 +604,3 @@ You can also see the GIF below to observe the difference between the images bett
 
 ---
 
-## Final words
-
-This project was full of important lessons for myself. I spent a lot of time during the last month to implement lots of different papers each with different strategies and it took quite a while and after A LOT of failures that I could come up with this method of training. Now you can see that how pretraining the generator significantly helped the model and improved the results.
-
-I also learned that some observations, although at first feeling like a bad mistake of yours, are worth paying attention to and further investigation; like the case of dropout in this project. Thanks to the helpful community of deep learning and AI, you can easily ask experts and get the answer you need and become more confidant in what you were just guessing. 
-
-I want to thank the authors of this wonderful paper for their awesome work and also [the great GitHub repository of this paper](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix) from which I borrowed some of the codes (with modification and simplification). I truly love the community of computer science and AI and all their hard work to improve the field and also make their contributions available to all. I'm happy to be a tiny part of this community.
