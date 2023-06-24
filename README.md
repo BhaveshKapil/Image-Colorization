@@ -20,9 +20,7 @@ Left: Input black & white images from test set | Right: the colorized outputs by
 
 Colorizing black and white images has emerged as an exhilarating application of deep learning. In the past, this task required extensive human involvement and laborious manual coding. However, thanks to the power of AI and deep learning, the entire process can now be seamlessly accomplished end-to-end. While one might assume that training a model from scratch for this task necessitates vast amounts of data and lengthy training times, my recent work in the past few weeks disproves this belief.
 
-During this period, I experimented with various model architectures, loss functions, training strategies, and more to find an optimal approach. Leveraging the latest advancements in deep learning, I successfully developed an efficient strategy to train a model for colorization. Surprisingly, this was achieved using a relatively small dataset and significantly reduced training times. In this article, I will provide a detailed account of the steps I took, including the accompanying code. Additionally, I will discuss the strategies that proved effective as well as those that did not yield the desired results.
-
-Before delving into the technical aspects, I will provide an overview of the colorization problem and offer a brief summary of the advancements made in recent years. It is assumed that readers possess a basic understanding of deep learning, GANs, and the PyTorch library. Without further ado, let us embark on this exciting journey.
+During this period, I experimented with various model architectures, loss functions, training strategies, and more to find an optimal approach. Leveraging the latest advancements in deep learning, I successfully developed an efficient strategy to train a model for colorization. Surprisingly, this was achieved using a relatively small dataset and significantly reduced training times. 
 
 ## Introduction to colorization problem
 
