@@ -3,7 +3,7 @@
 **I have successfully completed my project in the second semester of my MTech program, with guidance from my advisor. Throughout its development, I extensively utilized numerous resources, including research papers, to enhance my understanding of various concepts in deep learning.  This project has greatly contributed to my understanding of various concepts in deep learning, significantly aiding in my learning process. To quickly review the project, you can directly refer to the "Project_Report.pdf" file, which contains all the mentioned results. Enjoy!!**
 
 
-## Final model's output 
+## Final model's output using U-Net and conditional GAN
 
 ![output 1](./files/main.png)
 Left: Input black & white images from test set | Right: the colorized outputs by the final model of this tutorial
@@ -18,35 +18,36 @@ Left: Input black & white images from test set | Right: the colorized outputs by
 
 ---
 
-Colorizing black and white images has emerged as an exhilarating application of deep learning. In the past, this task required extensive human involvement and laborious manual coding. However, thanks to the power of AI and deep learning, the entire process can now be seamlessly accomplished end-to-end. While one might assume that training a model from scratch for this task necessitates vast amounts of data and lengthy training times, my recent work in the past few weeks disproves this belief.
+Turning black and white images into colorized versions has become an exciting application of advanced machine learning. In the past, this process relied heavily on human effort and tedious manual coding. However, thanks to the incredible capabilities of artificial intelligence and advanced machine learning techniques, we can now effortlessly complete the entire process from start to finish. Some might assume that training a model from scratch for this task requires massive amounts of data and extensive training periods. However, my recent work over the past few weeks challenges this belief.
 
-During this period, I experimented with various model architectures, loss functions, training strategies, and more to find an optimal approach. Leveraging the latest advancements in deep learning, I successfully developed an efficient strategy to train a model for colorization. Surprisingly, this was achieved using a relatively small dataset and significantly reduced training times. 
+During this timeframe, I conducted experiments using different model structures, loss functions, training methods, and more, in order to discover the best approach. By harnessing the latest advancements in deep learning, I successfully devised an efficient strategy to train a model for colorization. Surprisingly, I achieved this using a relatively small dataset and significantly reduced training times.
 
 ## Introduction to colorization problem
 
 ### RGB vs L\*a\*b
 
-As you may be aware, when an image is loaded, it is represented as a rank-3 array (height, width, color), where the last axis corresponds to the color data of the image. These data typically represent color in the RGB color space, with each pixel having three numbers indicating the amount of Red, Green, and Blue present. In the provided image, you can observe that the left portion of the "main image" (the leftmost image) appears blue. Consequently, in the blue channel of the image, this specific area exhibits higher values, resulting in a darker shade.
+You may already know that when we open an image, it is displayed as a three-dimensional array with dimensions representing the height, width, and color. The last dimension of the array corresponds to the color information of the image. Generally, the colors are represented in the RGB color space, where each pixel is described by three numbers indicating the amount of Red, Green, and Blue present. In the given image, you can see that the left side of the "main image" (the image on the far left) appears to have a blue tone. As a result, in the blue color channel of the image, this specific area has higher values, which makes it appear darker.
 
 ![rgb image](./files/rgb.jpg)
 
-Within the Lab color space, each pixel is still represented by three numbers. However, the interpretation of these numbers differs. The first channel, L, encodes the Lightness of each pixel. When visualized independently (as depicted in the second image in the row below), this channel appears as a black and white image. On the other hand, the a and b channels encode the levels of green-red and yellow-blue, respectively, for each pixel. The following image demonstrates the individual channels of the Lab color space.
-
+In the Lab color space, every pixel is still described using three values. Nevertheless, the meaning of these values is distinct. The initial channel, L, carries the information about the brightness of each pixel. When viewed on its own (as shown in the second picture in the row below), this channel looks like a grayscale image. Conversely, the a and b channels hold the data about the amount of green-red and yellow-blue tones, respectively, for each pixel. The next image illustrates the distinct channels of the Lab color space.
 ![lab image](./files/lab.jpg)
 
-To train a colorization model, we typically provide it with a grayscale image and expect it to generate a colorful output. When using the Lab color space, we can feed the L channel (representing the grayscale image) to the model and task it with predicting the remaining two channels (*a and *b). After obtaining these predictions, we concatenate all three channels to reconstruct the final colorful image.
+In order to teach a colorization model, our usual approach involves supplying it with a black-and-white image and expecting it to produce a vibrant, colorful output. When employing the Lab color space, we can input the L channel (which represents the grayscale image) into the model and assign it the task of predicting the remaining two channels (*a and *b). Once we have obtained these predictions, we combine all three channels to reconstruct the final, richly colored image.
 
-However, if we were to use RGB directly, we would first need to convert the image to grayscale, feed the grayscale image to the model, and hope that the model accurately predicts all three color channels. This proves to be a more challenging and unstable task due to the significantly larger number of possible combinations when predicting three numbers compared to just two numbers.
+However, if we were to directly use the RGB color space, we would first have to convert the image to grayscale, pass the grayscale version to the model, and hope that the model accurately predicts all three color channels. This proves to be a more difficult and unreliable undertaking due to the significantly larger number of possible combinations when predicting three values compared to just two.
 
-We are going to build a GAN (a conditional GAN to be specific) and use an extra loss function, L1 loss. Let's start with the GAN.
+Our plan involves constructing a GAN (specifically, a conditional GAN) and incorporating an additional loss function known as L1 loss. Let's begin by working on the GAN.
 
 ### A deeper dive into GAN world
 
-In a Generative Adversarial Network (GAN), there are two main components: the generator and the discriminator. These models work together to solve a problem. In our specific setup, the generator model takes a grayscale image (a single-channel image) as input and generates a two-channel image, with one channel for *a and another for *b. On the other hand, the discriminator model takes these two generated channels, concatenates them with the input grayscale image, and determines whether the resulting three-channel image is real or fake. It is important to note that the discriminator also needs exposure to real images (three-channel images in the Lab color space) that are not produced by the generator, and it should learn to recognize them as real.
+In a Generative Adversarial Network (GAN), we have two main components: the generator and the discriminator. These components work together collaboratively to tackle a problem. Specifically, our generator takes a black-and-white image (a single-channel image) as input and produces a two-channel image, with one channel for *a and another for *b.
 
-Now, let's discuss the "condition" we mentioned earlier. The grayscale image that both the generator and discriminator observe serves as the condition provided to both models in our GAN. We expect that both models take this condition into consideration during their respective tasks.
+The discriminator, on the other hand, evaluates the authenticity of the two generated channels by combining them with the input black-and-white image. Its task is to determine whether the resulting three-channel image is genuine or artificially generated. To ensure the discriminator's effectiveness, it must also be exposed to real images (three-channel images in the Lab color space) that were not created by the generator. This helps the discriminator learn to differentiate between real and fake images.
 
-To delve into the mathematical aspect, let's denote the grayscale image as x, the input noise for the generator as z, and the desired two-channel output as y (which can also represent the two color channels of a real image). Furthermore, G represents the generator model, and D represents the discriminator. Consequently, the loss function for our conditional GAN can be expressed as follows:
+Now, let's focus on the concept of "condition" we mentioned earlier. The grayscale image that both the generator and discriminator observe acts as a guiding condition for both models within our GAN. We anticipate that both models take this condition into account while performing their respective tasks.
+
+To delve into the mathematical aspect, let's represent the grayscale image as x, the input noise for the generator as z, and the desired two-channel output as y (which can also represent the two color channels of a real image). Additionally, we denote G as the generator model and D as the discriminator. Accordingly, the loss function for our conditional GAN can be expressed as follows:
 
 ![GAN Loss](./files/GAN_loss.jpg)
 
@@ -54,11 +55,11 @@ Notice that _**x**_ is given to both models which is the condition we introduce 
 
 ### Loss function we optimize
 
-The earlier loss function helps to produce good-looking colorful images that seem real, but to further help the models and introduce some supervision in our task, we combine this loss function with L1 Loss (you might know L1 loss as mean absolute error) of the predicted colors compared with the actual colors:
+The previous loss function contributes to generating visually appealing and realistic colorful images. However, in order to provide additional support to the models and incorporate some guidance in our objective, we incorporate the L1 Loss (also known as mean absolute error) between the predicted colors and the actual colors.
 
 ![L1 loss](./files/l1_loss.jpg)
 
-If we use L1 loss alone, the model still learns to colorize the images but it will be conservative and most of the time uses colors like "gray" or "brown" because when it doubts which color is the best, it takes the average and uses these colors to reduce the L1 loss as much as possible (it is similar to the blurring effect of L1 or L2 loss in super resolution task). Also, the L1 Loss is preferred over L2 loss (or mean squared error) because it reduces that effect of producing gray-ish images. So, our combined loss function will be:
+When only L1 loss is employed, the model continues to acquire the ability to add color to the images. However, it tends to be cautious and frequently selects colors such as "gray" or "brown" when it is uncertain about the optimal choice. This behavior is motivated by the desire to minimize the L1 loss by taking the average and utilizing these colors, resulting in a similar blurring effect observed in L1 or L2 loss in the super resolution task. Furthermore, L1 loss is favored over L2 loss (or mean squared error) because it mitigates the tendency to generate images with a grayish appearance. Therefore, our combined loss function will be as follows:
 
 ![loss](./files/loss.jpg)
 
@@ -164,11 +165,11 @@ print(len(train_dl), len(val_dl))
 
 ### 1.3- Generator
 
-This code implements a U-Net to be used as the generator of our GAN. The important thing to understand is that it makes the U-Net from the middle part of it (down in the U shape) and adds down-sampling and up-sampling modules to the left and right of that middle module (respectively) at every iteration until it reaches the input module and output module. Look at the following image that made from one of the images in the article to give you a better sense of what is happening in the code:
+This code uses a U-Net as the generator for our GAN. The key concept to grasp is that it constructs the U-Net by starting from the middle section (the bottom of the U shape) and progressively adds down-sampling and up-sampling modules on the left and right sides of that central module, respectively, with each iteration until it reaches the input and output modules. Take a look at the image below, which was created using one of the images in the article, to get a clearer understanding of the code's functionality.:
 
 ![unet](./files/unet.png)
 
-The blue rectangles show the order in which the related modules are built with the code. The U-Net we will build has more layers than what is depicted in this image but it suffices to give you the idea. Also notice in the code that we are going 8 layers down, so if we start with a 256 by 256 image, in the middle of the U-Net we will get a 1 by 1 (256 / 2⁸) image and then it gets up-sampled to produce a  256 by 256 image (with two channels). 
+The blue rectangles indicate the sequence in which the associated modules are constructed using the code. The U-Net we are constructing contains a greater number of layers than what is shown in this image, but the image provides a sufficient understanding. Additionally, observe in the code that we are descending through 8 layers. Therefore, if we begin with a 256 by 256 image, in the center of the U-Net we will obtain a 1 by 1 (256 divided by 2 to the power of 8) image, which is then up-sampled to generate a 256 by 256 image with two channels. 
 
 ```python
 class UnetBlock(nn.Module):
@@ -340,11 +341,13 @@ def init_model(model, device):
 
 ### 1.6- Putting everything together
 
-This class brings together all the previous parts and implements a few methods to take care of training our complete model. Let's investigate it. 
+This class brings together all the previous components and incorporates several techniques to handle the training of our complete model. Let's examine it.
 
-Then, we first train the discriminator by using backward_D method in which we feed the fake images produced by generator to the discriminator (make sure to detach them from the generator's graph so that they act as a constant to the discriminator, like normal images) and label them as fake. Then we feed a batch of real images from training set to the discriminator and label them as real. We add up the two losses for fake and real and take the average and then call the backward on the final loss. 
+Firstly, we initiate the training of the discriminator using the backward_D method. In this process, we provide the discriminator with the fake images generated by the generator. It's important to detach these images from the generator's graph so that they are treated as constant inputs to the discriminator, just like real images. We label these fake images accordingly. Subsequently, we feed a batch of real images from the training set to the discriminator and label them as real. We calculate the losses separately for the fake and real images, sum them up, take the average, and perform a backward pass on the final loss.
 
-Now, we can train the generator. In backward_G method we feed the discriminator the fake image and try to fool it by assigning real labels to them and calculating the adversarial loss. As I mentioned earlier, we use L1 loss as well and compute the distance between the predicted two channels and the target two channels and multiply this loss by a coefficient (which is 100 in our case) to balance the two losses and then add this loss to the adversarial loss. Then we call the backward method of the loss.
+Next, we proceed to train the generator using the backward_G method. Here, we provide the discriminator with the fake images and attempt to deceive it by assigning real labels to these images. We calculate the adversarial loss in this process. Additionally, we utilize the L1 loss to measure the difference between the predicted and target channels, multiplying it by a coefficient (which is set to 100 in our case) to balance the two losses. We then add this loss to the adversarial loss and perform a backward pass on the combined loss.
+
+In summary, the class integrates all the previous parts and applies specific methods to facilitate the training of our complete model.
 
 
 ```python
