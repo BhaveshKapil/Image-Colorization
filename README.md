@@ -1,6 +1,6 @@
 # Image Colorization using Deep Learning Models
 
-**I have successfully completed my project in the second semester of my MTech program, with guidance from my advisor. Throughout its development, I extensively utilized numerous resources, including research papers, to enhance my understanding of various concepts in deep learning.  This project has greatly contributed to my understanding of various concepts in deep learning, significantly aiding in my learning process. To quickly review the project, you can directly refer to the "Project_Report.pdf" file, which contains all the mentioned results. Enjoy!!**
+**I have successfully completed my project in the second semester of my MTech CSE(AI) at NIT Hamirpur (2022-2024), with guidance from my advisor. Throughout its development, I extensively utilized numerous resources, including research papers, to enhance my understanding of various concepts in deep learning.  This project has greatly contributed to my understanding of various concepts in deep learning, significantly aiding in my learning process. To quickly review the project, you can directly refer to the "Project_Report.pdf" file, which contains all the mentioned results. Enjoy!!**
 
 
 **Reference Paper : [Image-to-Image Translation with Conditional Adversarial Networks](https://arxiv.org/abs/1611.07004)**
